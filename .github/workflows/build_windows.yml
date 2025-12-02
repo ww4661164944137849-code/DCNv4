@@ -1,6 +1,5 @@
 name: Build DCNv4 Windows Wheel
 
-# 触发条件：当你手动点击按钮，或者推送到 main 分支时触发
 on:
   workflow_dispatch:
   push:
@@ -8,19 +7,17 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019 # 使用稳定且带 VS2019 的环境（兼容性好）
+    runs-on: windows-2019 
 
     strategy:
       matrix:
-        # 【在这里修改你的配置】
-        # 请确保和你本地电脑的 python --version 一致
+
         python-version: ['3.10'] 
-        # 请确保和你本地安装的 PyTorch 依赖的 CUDA 版本一致
-        # 比如本地装的是 torch 2.1.2+cu118，这里就选 11.8.0
+
         cuda-version: ['12.1.0'] 
-        # PyTorch 版本
+    
         pytorch-version: ['2.4.0']
-        # PyTorch 下载后缀 (cu118 或 cu121)
+     
         pytorch-index: ['cu121'] 
 
     steps:
@@ -31,53 +28,49 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    # 1. 安装 CUDA Toolkit (这是最关键的一步，模拟本地安装 CUDA)
+    
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.19
       id: cuda-toolkit
       with:
         cuda: ${{ matrix.cuda-version }}
-        method: 'network' # 使用网络安装程序，比下载整个大文件更稳定
-        sub-packages: '["nvcc", "visual_studio_integration"]' # 只安装编译必须的组件，极大减少下载量
+        method: 'network' 
+        sub-packages: '["nvcc", "visual_studio_integration"]' 
 
-    # 2. 安装 PyTorch 和编译工具
+  
     - name: Install PyTorch and Ninja
       shell: cmd
       run: |
         python -m pip install --upgrade pip
-        # 安装 PyTorch
+      
         pip install torch==${{ matrix.pytorch-version }} --index-url https://download.pytorch.org/whl/${{ matrix.pytorch-index }}
-        # 安装编译必须的库
+       
         pip install ninja setuptools wheel
 
-    # 3. 编译 Wheel 包
+   
     - name: Build Wheel
       shell: cmd
       env:
-        # 【关键】指定显卡架构，防止编译太慢或不兼容
-        # 8.6 对应 RTX 30 系列 (3080/3090)
-        # 8.9 对应 RTX 40 系列 (4080/4090)
-        # 7.5 对应 RTX 20 系列
-        # 如果你想通用，可以写 "7.5;8.0;8.6;8.9"
+       
         TORCH_CUDA_ARCH_LIST: "8.6;8.9" 
         DISTUTILS_USE_SDK: 1
         MSSdk: 1
       run: |
-        # 激活 Visual Studio 环境 (Windows 编译必须)
+        
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         
-        # 验证 NVCC 是否可用
+       
         nvcc --version
         
-        # 开始编译 (.whl 文件会生成在 dist 目录下)
+       
         python setup.py bdist_wheel
 
-    # 4. 显示生成的文件名 (方便调试)
+    
     - name: List Artifacts
       shell: cmd
       run: dir dist
 
-    # 5. 上传生成的包供下载
+   
     - name: Upload Wheel
       uses: actions/upload-artifact@v4
       with:
