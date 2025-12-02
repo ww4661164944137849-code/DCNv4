@@ -50,12 +50,14 @@ jobs:
     - name: Build Wheel
       shell: cmd
       env:
-       
+        FORCE_CUDA: "1"
+        
         TORCH_CUDA_ARCH_LIST: "8.6;8.9" 
         DISTUTILS_USE_SDK: 1
         MSSdk: 1
       
       run: |
+        pip install numpy
 
         cd DCNv4_op
         
