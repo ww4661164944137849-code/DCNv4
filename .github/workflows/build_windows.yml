@@ -33,10 +33,12 @@ jobs:
 
     # 1. 安装 CUDA Toolkit (这是最关键的一步，模拟本地安装 CUDA)
     - name: Install CUDA Toolkit
-      uses: Jimver/cuda-toolkit@v0.2.14
+      uses: Jimver/cuda-toolkit@v0.2.19
       id: cuda-toolkit
       with:
         cuda: ${{ matrix.cuda-version }}
+        method: 'network' # 使用网络安装程序，比下载整个大文件更稳定
+        sub-packages: '["nvcc", "visual_studio_integration"]' # 只安装编译必须的组件，极大减少下载量
 
     # 2. 安装 PyTorch 和编译工具
     - name: Install PyTorch and Ninja
